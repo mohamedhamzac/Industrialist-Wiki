@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Industrialist Wiki [BÊTA]</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #1f2937, #111827);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* effet grille industrielle */
+    body::before {
+      content: "";
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: moveGrid 20s linear infinite;
+    }
+
+    @keyframes moveGrid {
+      from { transform: translate(0,0); }
+      to { transform: translate(-50px,-50px); }
+    }
+
+    header {
+      position: relative;
+      text-align: center;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+      z-index: 10;
+    }
+
+    .logo {
+      width: 60px;
+      margin-bottom: 10px;
+      animation: rotate 6s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-size: 28px;
+      margin: 0;
+      color: #f97316;
+    }
+
+    nav {
+      margin-top: 10px;
+    }
+
+    .nav-btn {
+      display: inline-block;
+      margin: 0 10px;
+      padding: 8px 15px;
+      border-radius: 5px;
+      background: #f97316;
+      color: white;
+      text-decoration: none;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover {
+      background: #ea580c;
+      transform: scale(1.05);
+    }
+
+    /* Footer info bar */
+    .footer-info {
+      position: relative;
+      z-index: 10;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(249,115,22,0.2);
+      padding: 8px 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .footer-info span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .telegram-link {
+      color: #ffffff !important;
+      text-decoration: underline !important;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .telegram-link:hover {
+      opacity: 0.8;
+    }
+
+    .content {
+      flex: 1;
+      position: relative;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .page {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .page h2 {
+      color: #f97316;
+      margin-top: 0;
+    }
+
+    .editor-container {
+      margin-top: 20px;
+    }
+
+    #editor {
+      height: 400px;
+      background: white;
+      color: black;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #e5e7eb;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #f97316;
+      border-radius: 5px;
+      background: rgba(249, 115, 22, 0.2);
+      color: #e5e7eb;
+      box-sizing: border-box;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(229, 231, 235, 0.5);
+    }
+
+    .form-group input:focus {
+      outline: none;
+      background: rgba(249, 115, 22, 0.3);
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 20px;
+      border-radius: 5px;
+      background: #f97316;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #ea580c;
+    }
+
+    .pages-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .page-link {
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 5px;
+      text-decoration: none;
+      color: #e5e7eb;
+      transition: 0.3s;
+    }
+
+    .page-link:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .editor-canvas {
+      position: relative;
+      background: rgba(255,255,255,0.08);
+      border: 2px dashed rgba(249,115,22,0.3);
+      min-height: 500px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .element {
+      position: absolute;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(249,115,22,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      cursor: move;
+      touch-action: none;
+      min-width: 100px;
+      transition: all 0.3s;
+    }
+
+    .element:hover {
+      border-color: #f97316;
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 15px rgba(249,115,22,0.5);
+    }
+
+    .element.selected {
+      border-color: #f97316;
+      background: rgba(249,115,22,0.2);
+      box-shadow: 0 0 20px rgba(249,115,22,0.8);
+    }
+
+    .element-content {
+      width: 100%;
+      word-wrap: break-word;
+    }
+
+    .element-text {
+      color: #e5e7eb;
+      font-size: 14px;
+      min-height: 30px;
+      outline: none;
+    }
+
+    .element-image {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 5px;
+    }
+
+    .element-icon {
+      font-size: 48px;
+      text-align: center;
+    }
+
+    .element-delete {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 25px;
+      height: 25px;
+      background: #f97316;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: none;
+      font-size: 16px;
+    }
+
+    .element.selected .element-delete {
+      display: block;
+    }
+
+    .element-delete:hover {
+      background: #ea580c;
+    }
+
+    .element-tools {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .tool-btn {
+      flex: 1;
+      padding: 10px;
+      background: rgba(249,115,22,0.3);
+      color: #e5e7eb;
+      border: 1px solid #f97316;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .tool-btn:hover {
+      background: rgba(249,115,22,0.6);
+    }
+
+    .form-input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-input-row input {
+      flex: 1;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(31, 41, 55, 0.95);
+      border: 2px solid #f97316;
+      border-radius: 10px;
+      padding: 30px;
+      min-width: 400px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 40px rgba(249, 115, 22, 0.3);
+    }
+
+    .modal-title {
+      color: #f97316;
+      font-size: 20px;
+      margin: 0 0 20px 0;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #f97316;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #e5e7eb;
+      box-sizing: border-box;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .modal-input::placeholder {
+      color: rgba(229, 231, 235, 0.5);
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      transition: 0.3s;
+    }
+
+    .modal-btn-primary {
+      background: #f97316;
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: #ea580c;
+    }
+
+    .modal-btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e5e7eb;
+      border: 1px solid #f97316;
+    }
+
+    .modal-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .modal-tab {
+      padding: 10px 15px;
+      background: none;
+      color: #e5e7eb;
+      border: none;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      border-bottom: 2px solid transparent;
+      transition: 0.3s;
+    }
+
+    .modal-tab:hover {
+      color: #f97316;
+    }
+
+    .modal-tab.active {
+      color: #f97316;
+      border-bottom-color: #f97316;
+    }
+
+    .modal-tab-content {
+      display: none;
+    }
+
+    .modal-tab-content.active {
+      display: block;
+    }
+
+    .file-upload-label {
+      display: block;
+      padding: 15px;
+      background: rgba(249, 115, 22, 0.2);
+      border: 2px dashed #f97316;
+      border-radius: 5px;
+      text-align: center;
+      cursor: pointer;
+      color: #e5e7eb;
+      transition: 0.3s;
+    }
+
+    .file-upload-label:hover {
+      background: rgba(249, 115, 22, 0.3);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <img src="https://cdn-icons-png.flaticon.com/512/1995/1995470.png" class="logo">
+    <h1>Industrialist Wiki [BÊTA]</h1>
+    <nav>
+      <button class="nav-btn" onclick="handleShowHome()">Accueil</button>
+      <button class="nav-btn" onclick="handleShowCreatePage()">Créer une Page</button>
+      <button class="nav-btn" onclick="handleShowPagesList()">Liste des Pages</button>
+    </nav>
+  </header>
+
+  <div class="content" id="content">
+    <!-- Content will be loaded here -->
+  </div>
+
+  <!-- BARRE D'INFO TELEGRAM -->
+  <div class="footer-info">
+    <span>
+      🐛 Vous remarquez des bugs ou des erreurs ? Signalez-les sur notre
+      <a class="telegram-link" href="https://t.me/vaxus_vercel" target="_blank" rel="noopener noreferrer">Telegram</a>
+    </span>
+    <span>
+      💡 Des suggestions ? Proposez-les sur notre
+      <a class="telegram-link" href="https://t.me/vaxus_vercel" target="_blank" rel="noopener noreferrer">Telegram</a>
+    </span>
+  </div>
+
+  <!-- MODALES -->
+  <div id="textModal" class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Ajouter du Texte</h2>
+      <input type="text" id="textInput" class="modal-input" placeholder="Entrez votre texte...">
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-secondary" onclick="closeModal('textModal')">Annuler</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmAddText()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="iconModal" class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Ajouter une Icône</h2>
+      <input type="text" id="iconInput" class="modal-input" placeholder="Emoji ou texte (ex: 🎨 ou ⚙️ 🔧 🏭)">
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-secondary" onclick="closeModal('iconModal')">Annuler</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmAddIcon()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="modal">
+    <div class="modal-content">
+      <h2 class="modal-title">Ajouter une Image</h2>
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchImageTab('url')">Par URL</button>
+        <button class="modal-tab" onclick="switchImageTab('upload')">Importer</button>
+      </div>
+      <div id="imageUrlTab" class="modal-tab-content active">
+        <input type="text" id="imageUrlInput" class="modal-input" placeholder="https://...">
+      </div>
+      <div id="imageUploadTab" class="modal-tab-content">
+        <label class="file-upload-label" for="fileInput">
+          📁 Cliquez pour sélectionner une image
+        </label>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-secondary" onclick="closeModal('imageModal')">Annuler</button>
+        <button class="modal-btn modal-btn-primary" id="confirmImageBtn" onclick="confirmAddImageUrl()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚙️ CONFIGURATION SUPABASE
+    const SUPABASE_URL = 'https://jngsuebmmbukultjyjoq.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_PFHjZkcadfHovdMaWkn9rw_7MUu77q4';
+
+    let supabaseClient = null;
+    let pages = {};
+    let selectedElement = null;
+    let draggedElement = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    // Initialiser Supabase
+    async function initSupabase() {
+      return new Promise((resolve) => {
+        const checkSupabase = setInterval(() => {
+          if (window.supabase) {
+            clearInterval(checkSupabase);
+            const { createClient } = window.supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+            resolve();
+          }
+        }, 50);
+        setTimeout(() => {
+          clearInterval(checkSupabase);
+          resolve();
+        }, 5000);
+      });
+    }
+
+    // Charger les pages
+    async function loadPages() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('pages')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        pages = {};
+        if (data) {
+          data.forEach(page => {
+            pages[page.title] = page.elements;
+          });
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+      }
+    }
+
+    // Wrappers pour les clics des boutons
+    async function handleShowHome() {
+      showHome();
+    }
+
+    async function handleShowCreatePage() {
+      showCreatePage();
+    }
+
+    async function handleShowPagesList() {
+      await loadPages();
+      showPagesList();
+    }
+
+    // Afficher l'accueil
+    function showHome() {
+      document.getElementById('content').innerHTML = `
+        <div class="page">
+          <h2>Bienvenue sur Industrialist Wiki [BÊTA]</h2>
+          <p>✨ Créez des pages avec du texte, des images et des icônes.</p>
+          <p>📍 Déplacez vos éléments n'importe où sur la page.</p>
+          <p>🌐 Vos pages sont synchronisées en temps réel grâce à notre base de données !</p>
+        </div>
+      `;
+    }
+
+    // Créer une page
+    function showCreatePage() {
+      document.getElementById('content').innerHTML = `
+        <div class="page">
+          <h2>Créer une Nouvelle Page</h2>
+          <div class="form-group">
+            <label for="pageTitle">Titre de la Page:</label>
+            <input type="text" id="pageTitle" placeholder="Entrez le titre">
+          </div>
+          <div class="element-tools">
+            <button class="tool-btn" onclick="addTextElement()">+ Texte</button>
+            <button class="tool-btn" onclick="addImagePrompt()">+ Image</button>
+            <button class="tool-btn" onclick="addIconPrompt()">+ Icône</button>
+          </div>
+          <div id="editor-canvas" class="editor-canvas"></div>
+          <button class="btn" onclick="savePage()">Sauvegarder la Page</button>
+        </div>
+      `;
+      setupEditorCanvas();
+    }
+
+    function setupEditorCanvas() {
+      const canvas = document.getElementById('editor-canvas');
+      if (!canvas) return;
+      canvas.addEventListener('click', (e) => {
+        if (e.target === canvas) {
+          deselectElement();
+        }
+      });
+    }
+
+    // Gestion des modales
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    function switchImageTab(tab) {
+      // Cacher tous les tabs
+      document.getElementById('imageUrlTab').classList.remove('active');
+      document.getElementById('imageUploadTab').classList.remove('active');
+      
+      // Retirer active des boutons
+      document.querySelectorAll('.modal-tab').forEach(btn => btn.classList.remove('active'));
+      
+      // Afficher le tab sélectionné
+      if (tab === 'url') {
+        document.getElementById('imageUrlTab').classList.add('active');
+        document.querySelectorAll('.modal-tab')[0].classList.add('active');
+        document.getElementById('confirmImageBtn').onclick = confirmAddImageUrl;
+      } else {
+        document.getElementById('imageUploadTab').classList.add('active');
+        document.querySelectorAll('.modal-tab')[1].classList.add('active');
+        document.getElementById('confirmImageBtn').onclick = confirmAddImageUpload;
+      }
+    }
+
+    function addTextElement() {
+      document.getElementById('textInput').value = '';
+      document.getElementById('textInput').focus();
+      openModal('textModal');
+    }
+
+    function confirmAddText() {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) {
+        alert('Veuillez entrer du texte.');
+        return;
+      }
+      closeModal('textModal');
+      const canvas = document.getElementById('editor-canvas');
+      if (!canvas) return;
+      const element = createElementDiv(text, 'text');
+      element.style.left = Math.random() * 200 + 50 + 'px';
+      element.style.top = Math.random() * 200 + 50 + 'px';
+      canvas.appendChild(element);
+    }
+
+    function addIconPrompt() {
+      document.getElementById('iconInput').value = '';
+      document.getElementById('iconInput').focus();
+      openModal('iconModal');
+    }
+
+    function confirmAddIcon() {
+      const emoji = document.getElementById('iconInput').value.trim();
+      if (!emoji) {
+        alert('Veuillez entrer une icône.');
+        return;
+      }
+      closeModal('iconModal');
+      const canvas = document.getElementById('editor-canvas');
+      if (!canvas) return;
+      const element = createElementDiv(`<div class="element-icon">${emoji}</div>`, 'icon');
+      element.style.left = Math.random() * 200 + 50 + 'px';
+      element.style.top = Math.random() * 200 + 50 + 'px';
+      canvas.appendChild(element);
+    }
+
+    function addImagePrompt() {
+      document.getElementById('imageUrlInput').value = '';
+      document.getElementById('fileInput').value = '';
+      openModal('imageModal');
+    }
+
+    function confirmAddImageUrl() {
+      const url = document.getElementById('imageUrlInput').value.trim();
+      if (!url) {
+        alert('Veuillez entrer une URL.');
+        return;
+      }
+      closeModal('imageModal');
+      const canvas = document.getElementById('editor-canvas');
+      if (!canvas) return;
+      const element = createElementDiv(`<img src="${url}" class="element-image" onerror="this.style.display='none'">`, 'image');
+      element.style.left = Math.random() * 200 + 50 + 'px';
+      element.style.top = Math.random() * 200 + 50 + 'px';
+      canvas.appendChild(element);
+    }
+
+    function confirmAddImageUpload() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) {
+        alert('Veuillez sélectionner une image.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        closeModal('imageModal');
+        const canvas = document.getElementById('editor-canvas');
+        if (!canvas) return;
+        const element = createElementDiv(`<img src="${base64}" class="element-image">`, 'image');
+        element.style.left = Math.random() * 200 + 50 + 'px';
+        element.style.top = Math.random() * 200 + 50 + 'px';
+        canvas.appendChild(element);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function createElementDiv(content, type) {
+      const element = document.createElement('div');
+      element.className = 'element';
+      element.dataset.type = type;
+      element.innerHTML = `<div class="element-content">${content}</div><button class="element-delete" onclick="deleteElement(this)">×</button>`;
+
+      if (type === 'text') {
+        const textDiv = element.querySelector('.element-content');
+        textDiv.contentEditable = 'true';
+        textDiv.className = 'element-content element-text';
+      }
+
+      element.addEventListener('mousedown', (e) => {
+        selectElement(element);
+        if (e.target.classList.contains('element-delete')) return;
+        startDrag(e, element);
+      });
+
+      element.addEventListener('click', (e) => {
+        if (!e.target.closest('.element-delete')) {
+          selectElement(element);
+        }
+      });
+
+      return element;
+    }
+
+    function selectElement(element) {
+      deselectElement();
+      element.classList.add('selected');
+      selectedElement = element;
+    }
+
+    function deselectElement() {
+      if (selectedElement) {
+        selectedElement.classList.remove('selected');
+        selectedElement = null;
+      }
+    }
+
+    function deleteElement(btn) {
+      const element = btn.closest('.element');
+      element.remove();
+      if (selectedElement === element) {
+        selectedElement = null;
+      }
+    }
+
+    function startDrag(e, element) {
+      draggedElement = element;
+      const rect = element.getBoundingClientRect();
+      const canvasRect = element.parentElement.getBoundingClientRect();
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+
+      function moveDrag(moveEvent) {
+        if (!draggedElement) return;
+        const x = moveEvent.clientX - canvasRect.left - offsetX;
+        const y = moveEvent.clientY - canvasRect.top - offsetY;
+        draggedElement.style.left = Math.max(0, Math.min(x, canvasRect.width - rect.width)) + 'px';
+        draggedElement.style.top = Math.max(0, Math.min(y, canvasRect.height - rect.height)) + 'px';
+      }
+
+      function stopDrag() {
+        draggedElement = null;
+        document.removeEventListener('mousemove', moveDrag);
+        document.removeEventListener('mouseup', stopDrag);
+      }
+
+      document.addEventListener('mousemove', moveDrag);
+      document.addEventListener('mouseup', stopDrag);
+    }
+
+    async function savePage() {
+      if (!supabaseClient) {
+        alert('Supabase n\'est pas encore initialisé.');
+        return;
+      }
+
+      const title = document.getElementById('pageTitle').value.trim();
+      if (!title) {
+        alert('Veuillez entrer un titre.');
+        return;
+      }
+
+      const canvas = document.getElementById('editor-canvas');
+      const elements = [];
+      canvas.querySelectorAll('.element').forEach(el => {
+        elements.push({
+          type: el.dataset.type,
+          content: el.querySelector('.element-content').innerHTML,
+          left: el.style.left,
+          top: el.style.top
+        });
+      });
+
+      try {
+        const { data: existing } = await supabaseClient
+          .from('pages')
+          .select('id')
+          .eq('title', title)
+          .single();
+
+        if (existing) {
+          await supabaseClient
+            .from('pages')
+            .update({ elements, updated_at: new Date() })
+            .eq('title', title);
+        } else {
+          await supabaseClient
+            .from('pages')
+            .insert([{ title, elements }]);
+        }
+
+        pages[title] = elements;
+        alert('Page sauvegardée !');
+        handleShowPagesList();
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la sauvegarde: ' + error.message);
+      }
+    }
+
+    function showPagesList() {
+      let html = '<div class="page"><h2>Pages Créées</h2><div class="pages-list">';
+      if (Object.keys(pages).length === 0) {
+        html += '<p>Aucune page créée pour le moment.</p>';
+      } else {
+        for (const title in pages) {
+          html += `<a class="page-link" onclick="viewPage('${title.replace(/'/g, "\\'")}')">${title}</a>`;
+        }
+      }
+      html += '</div></div>';
+      document.getElementById('content').innerHTML = html;
+    }
+
+    function viewPage(title) {
+      const elements = pages[title];
+      let html = `
+        <div class="page">
+          <h2>${title}</h2>
+          <div class="editor-canvas" style="pointer-events: none;">
+      `;
+
+      if (elements && elements.length > 0) {
+        elements.forEach(el => {
+          html += `
+            <div class="element" style="left: ${el.left}; top: ${el.top}; cursor: default;">
+              <div class="element-content">${el.content}</div>
+            </div>
+          `;
+        });
+      }
+
+      html += `
+          </div>
+          <button class="btn" onclick="editPage('${title.replace(/'/g, "\\'")}')" style="margin-right: 10px;">Modifier</button>
+          <button class="btn" onclick="deletePage('${title.replace(/'/g, "\\'")}')" style="background: #dc2626;">Supprimer</button>
+        </div>
+      `;
+      document.getElementById('content').innerHTML = html;
+    }
+
+    function editPage(title) {
+      const elements = pages[title];
+      document.getElementById('content').innerHTML = `
+        <div class="page">
+          <h2>Modifier: ${title}</h2>
+          <div class="element-tools">
+            <button class="tool-btn" onclick="addTextElement()">+ Texte</button>
+            <button class="tool-btn" onclick="addImagePrompt()">+ Image</button>
+            <button class="tool-btn" onclick="addIconPrompt()">+ Icône</button>
+          </div>
+          <div id="editor-canvas" class="editor-canvas"></div>
+          <button class="btn" onclick="updatePage('${title.replace(/'/g, "\\'")}')" style="margin-right: 10px;">Mettre à Jour</button>
+          <button class="btn" onclick="handleShowPagesList()" style="background: #666;">Annuler</button>
+        </div>
+      `;
+
+      const canvas = document.getElementById('editor-canvas');
+      if (elements && elements.length > 0) {
+        elements.forEach(el => {
+          const element = createElementDiv(el.content, el.type);
+          element.style.left = el.left;
+          element.style.top = el.top;
+          canvas.appendChild(element);
+        });
+      }
+
+      setupEditorCanvas();
+    }
+
+    async function updatePage(title) {
+      if (!supabaseClient) {
+        alert('Supabase n\'est pas encore initialisé.');
+        return;
+      }
+
+      const canvas = document.getElementById('editor-canvas');
+      const elements = [];
+      canvas.querySelectorAll('.element').forEach(el => {
+        elements.push({
+          type: el.dataset.type,
+          content: el.querySelector('.element-content').innerHTML,
+          left: el.style.left,
+          top: el.style.top
+        });
+      });
+
+      try {
+        await supabaseClient
+          .from('pages')
+          .update({ elements, updated_at: new Date() })
+          .eq('title', title);
+
+        pages[title] = elements;
+        alert('Page mise à jour !');
+        viewPage(title);
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour: ' + error.message);
+      }
+    }
+
+    async function deletePage(title) {
+      if (!supabaseClient) {
+        alert('Supabase n\'est pas encore initialisé.');
+        return;
+      }
+
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette page ?')) {
+        try {
+          await supabaseClient
+            .from('pages')
+            .delete()
+            .eq('title', title);
+
+          delete pages[title];
+          handleShowPagesList();
+        } catch (error) {
+          console.error('Erreur:', error);
+          alert('Erreur lors de la suppression: ' + error.message);
+        }
+      }
+    }
+
+    // Initialisation au démarrage
+    async function init() {
+      await initSupabase();
+      await loadPages();
+      showHome();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
